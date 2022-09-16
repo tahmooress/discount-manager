@@ -1,38 +1,20 @@
 package cmd
 
 import (
-	"context"
 	"fmt"
 	"io"
 	"os"
 	"os/signal"
 	"syscall"
 
+	"github.com/tahmooress/discount-manager/api"
 	"github.com/tahmooress/discount-manager/configs"
 	"github.com/tahmooress/discount-manager/logger"
+	"github.com/tahmooress/discount-manager/pkg/wrapper"
+	"github.com/tahmooress/discount-manager/service"
 )
 
-type closerWrapper struct {
-	closers []io.Closer
-	err     error
-}
-
-func (c *closerWrapper) add(cl io.Closer) {
-	c.closers = append(c.closers, cl)
-}
-
-func (c *closerWrapper) Close() error {
-	for _, f := range c.closers {
-		err := f.Close()
-		if err != nil && c.err == nil {
-			c.err = err
-		}
-	}
-
-	return c.err
-}
-
-func Runner(ctx context.Context) (closer io.Closer, err error) {
+func FullNodeRunner() (closer io.Closer, errChan <-chan error, err error) {
 	cfg := configs.Load()
 
 	log, err := logger.New(logger.Config{
@@ -40,23 +22,37 @@ func Runner(ctx context.Context) (closer io.Closer, err error) {
 		LogLevel:    cfg.LogLevel,
 	})
 	if err != nil {
-		panic(err)
+		return nil, nil, err
 	}
 
-	c := new(closerWrapper)
+	c := new(wrapper.Closer)
 
-	c.add(log)
+	c.Add(log)
 
 	defer func() {
 		if err != nil {
-			_ = closer.Close()
+			_ = c.Close()
 		}
 	}()
 
-	return c, nil
+	srv, err := service.New(cfg, log)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	c.Add(srv)
+
+	server, errChan, err := api.NewHTTPServer(cfg, nil, log)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	c.Add(server)
+
+	return c, nil, nil
 }
 
-func InterruptHook(cancelFunc context.CancelFunc, closer io.Closer) int {
+func Shutdown(errChan <-chan error, closer io.Closer) int {
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
 
@@ -74,6 +70,10 @@ func InterruptHook(cancelFunc context.CancelFunc, closer io.Closer) int {
 		} else {
 			fmt.Fprintf(os.Stdout, "terminate signal received -> shutdowned cleanly")
 		}
+
+		break
+	case err := <-errChan:
+		fmt.Fprintln(os.Stderr, err)
 
 		break
 	}

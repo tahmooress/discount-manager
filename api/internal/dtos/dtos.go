@@ -7,19 +7,25 @@ import (
 )
 
 var (
-	ErrInvalidMobile = errors.New("mobile format is not valid")
-	ErrMobileEmpty   = errors.New("mobile field should not be empty")
-	ErrEmptyCode     = errors.New("code field should not be empty")
+	ErrInvalidMobile     = errors.New("mobile format is not valid")
+	ErrMobileEmpty       = errors.New("mobile field should not be empty")
+	ErrEmptyCode         = errors.New("code field should not be empty")
+	ErrEmptyCampaignName = errors.New("campaign name field should not be empty")
 )
 
 type Redeemer struct {
-	Code   stringAdapter `json:"code"`
-	Mobile stringAdapter `json:"mobile"`
+	CampaignName string        `json:"campaign_name"`
+	Code         stringAdapter `json:"code"`
+	Mobile       stringAdapter `json:"mobile"`
 }
 
 func (r *Redeemer) Validate() error {
 	if r.Code.String() == "" {
 		return ErrEmptyCode
+	}
+
+	if r.CampaignName == "" {
+		return ErrEmptyCampaignName
 	}
 
 	mobile, err := newMobile(r.Mobile.String())

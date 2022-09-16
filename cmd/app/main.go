@@ -1,19 +1,16 @@
 package main
 
 import (
-	"context"
 	"os"
 
 	"github.com/tahmooress/discount-manager/cmd"
 )
 
 func main() {
-	ctx, cancel := context.WithCancel(context.Background())
-
-	closer, err := cmd.Runner(ctx)
+	closer, errChan, err := cmd.FullNodeRunner()
 	if err != nil {
 		panic(err)
 	}
 
-	os.Exit(cmd.InterruptHook(cancel, closer))
+	os.Exit(cmd.Shutdown(errChan, closer))
 }

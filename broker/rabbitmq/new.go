@@ -79,7 +79,7 @@ type session struct {
 	logger logger.Logger
 }
 
-func NewConsumer(cfg Config, handler Handler) (Consumer, error) {
+func NewConsumer(cfg Config, handler Handler, logger logger.Logger) (Consumer, error) {
 	if handler == nil {
 		return nil, errEmptyHandler
 	}
@@ -90,6 +90,7 @@ func NewConsumer(cfg Config, handler Handler) (Consumer, error) {
 		cnmu:        &sync.RWMutex{},
 		clmu:        &sync.RWMutex{},
 		lstmu:       &sync.RWMutex{},
+		logger:      logger,
 	}
 
 	err := session.initSetting(cfg)
@@ -100,7 +101,7 @@ func NewConsumer(cfg Config, handler Handler) (Consumer, error) {
 	session.lastStatus = &HealthState{
 		Status: false,
 		Message: fmt.Sprintf("connection on %s is open but Start Method not called",
-			maskConnection(cfg.Addr)),
+			maskConnection(cfg.addr)),
 	}
 
 	go session.handleConsumerConnection(handler)
@@ -108,7 +109,7 @@ func NewConsumer(cfg Config, handler Handler) (Consumer, error) {
 	return &session, nil
 }
 
-func NewPublisher(cfg Config) (Publisher, error) {
+func NewPublisher(cfg Config, logger logger.Logger) (Publisher, error) {
 	session := session{
 		isPublisher: true,
 		done:        make(chan bool),
@@ -117,6 +118,7 @@ func NewPublisher(cfg Config) (Publisher, error) {
 		cnmu:        &sync.RWMutex{},
 		clmu:        &sync.RWMutex{},
 		lstmu:       &sync.RWMutex{},
+		logger:      logger,
 	}
 
 	err := session.initSetting(cfg)
@@ -127,7 +129,7 @@ func NewPublisher(cfg Config) (Publisher, error) {
 	session.lastStatus = &HealthState{
 		Status: false,
 		Message: fmt.Sprintf("connection on %s is open but Start Method not called",
-			maskConnection(cfg.Addr)),
+			maskConnection(cfg.addr)),
 	}
 
 	go session.handlePublisherConnection()
@@ -136,7 +138,8 @@ func NewPublisher(cfg Config) (Publisher, error) {
 }
 
 func (s *session) validate(cfg Config) error {
-	if cfg.Addr == "" || cfg.ExchangeName == "" || cfg.ExchangeType == "" ||
+	if cfg.Host == "" || cfg.Port == "" ||
+		cfg.ExchangeName == "" || cfg.ExchangeType == "" ||
 		cfg.Queue == "" || cfg.RouteKey == "" {
 		return errEmptyValue
 	}
@@ -151,50 +154,23 @@ func (s *session) initSetting(cfg Config) error {
 		return fmt.Errorf("rabbit >> initSetting >> %w", err)
 	}
 
-	if cfg.ReconnectInterval == 0 {
-		s.cfg.ReconnectInterval = defaultReconnectInterval
-	}
+	cfg.addr = fmt.Sprintf("%s://%s", "amqp", cfg.Host)
 
-	if cfg.ReInitInterval == 0 {
-		s.cfg.ReInitInterval = defaultReInitInterval
-	}
+	min := 10000
+	max := 99999
 
-	if cfg.PrefetchCount == 0 {
-		s.cfg.PrefetchCount = defaultPrefetchCount
-	}
+	rand.Seed(time.Now().UnixNano())
+	tagRand := min + rand.Intn(max-min+1) //nolint: gosec
+	s.cfg.consumerTag = fmt.Sprintf("go-webhook_%d", tagRand)
 
-	if cfg.PrefetchSize == 0 {
-		s.cfg.PrefetchSize = defaultPrefetchSize
-	}
+	s.cfg = cfg
 
-	if cfg.ConsumerTag == "" {
-		min := 10000
-		max := 99999
+	s.cfg.reconnectInterval = defaultReconnectInterval
+	s.cfg.reInitInterval = defaultReInitInterval
 
-		rand.Seed(time.Now().UnixNano())
-		tagRand := min + rand.Intn(max-min+1) //nolint: gosec
-		s.cfg.ConsumerTag = fmt.Sprintf("go-webhook_%d", tagRand)
-	}
+	s.cfg.prefetchCount = defaultPrefetchCount
 
-	s.cfg.ExchangeName = cfg.ExchangeName
-	s.cfg.ExchangeType = cfg.ExchangeType
-	s.cfg.Queue = cfg.Queue
-	s.cfg.RouteKey = cfg.RouteKey
-	s.cfg.Addr = cfg.Addr
-
-	if cfg.logger == nil {
-		s.logger = createDefaultLogger()
-	} else {
-		s.logger = cfg.logger
-	}
+	s.cfg.prefetchSize = defaultPrefetchSize
 
 	return nil
-}
-
-func createDefaultLogger() logger.Logger {
-	logger, _ := logger.New(logger.Config{
-		LogLevel: "info",
-	})
-
-	return logger
 }

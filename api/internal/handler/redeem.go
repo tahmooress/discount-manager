@@ -2,30 +2,50 @@ package handler
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 
 	"github.com/tahmooress/discount-manager/api/internal/dtos"
+	"github.com/tahmooress/discount-manager/entities"
+	"github.com/tahmooress/discount-manager/service"
 )
 
-func (h *Handler) Redeem() http.HandlerFunc {
+func (h *Handler) EnqueeRedeemer() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		request, err := readRedeemRequest(r)
 		if err != nil {
 			h.logger.Errorf("handler: Redeem() >> %w", err)
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte("bad request"))
 		}
 
 		err = request.Validate()
 		if err != nil {
 			h.logger.Errorf("handler: Redeem() >> %w", err)
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte("bad request"))
 		}
 
-		err = h.service.RedeemVoucher(
+		err = h.service.EnqueeRedeemer(
 			r.Context(),
-			request.Mobile.String(),
-			request.Code.String(),
+			&entities.Redeemer{
+				User: request.Mobile.String(),
+				Voucher: &entities.Voucher{
+					Code: request.Code.String(),
+					Campaign: &entities.Campaign{
+						Name: request.CampaignName,
+					},
+				},
+			},
 		)
+		if err != nil {
+			responseErrorHandler(err, w)
+		}
+
+		w.WriteHeader(http.StatusAccepted)
+		w.Write([]byte("success"))
 	}
 }
 
@@ -45,4 +65,17 @@ func readRedeemRequest(r *http.Request) (*dtos.Redeemer, error) {
 	}
 
 	return &request, nil
+}
+
+func responseErrorHandler(err error, w http.ResponseWriter) {
+	switch {
+	case errors.Is(err, service.ErrCampaginNotFound):
+		w.WriteHeader(http.StatusNotFound)
+		w.Write([]byte(err.Error()))
+
+		return
+	default:
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("bad request"))
+	}
 }

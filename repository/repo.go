@@ -14,7 +14,7 @@ type repo struct {
 	db *sql.DB
 }
 
-func NewRepository(config *configs.AppConfigs) (DB, error) {
+func New(config *configs.AppConfigs) (DB, error) {
 	DatabaseDriver := config.DatabaseDriver
 	DatabaseName := config.DatabaseName
 	DatabaseHost := config.DatabaseHost

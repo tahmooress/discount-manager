@@ -11,7 +11,7 @@ func (s *session) connect(addr string) (*amqp.Connection, error) {
 	if err != nil {
 		s.setLastHealthStatus(HealthState{
 			Er:      err,
-			Message: fmt.Sprintf("attempting to dial %s failed", maskConnection(s.cfg.Addr)),
+			Message: fmt.Sprintf("attempting to dial %s failed", maskConnection(s.cfg.addr)),
 			Status:  false,
 		})
 

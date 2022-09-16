@@ -1,10 +1,6 @@
 ROOT = $(shell pwd)
 SERVICE_NAME = $(shell basename "$(PWD)")
-SERVICE_NAME_SIGNER_APP = $(SERVICE_NAME)"-signer-app"
-SERVICE_NAME_WATCHER_APP = $(SERVICE_NAME)"-watcher-app"
-SERVICE_NAME_INIT=$(SERVICE_NAME)"-command-init"
-SERVICE_NAME_CREATE_WALLET=$(SERVICE_NAME)"-command-createwallet"
-SERVICE_NAME_DUMP_WALLET=$(SERVICE_NAME)"-command-dumpwallet"
+SERVICE_NAME_APP = $(SERVICE_NAME)"-app"
 
 GO ?= go
 OS = $(shell uname -s | tr A-Z a-z)
@@ -36,11 +32,7 @@ help: ## Display this help message
 
 .PHONY: build
 build: ## Build development binary file
-	@ $(GO) build -race -ldflags '$(VERSION)' -o ./bin/${SERVICE_NAME_SIGNER_APP} ./cmd/app/signer...
-	@ $(GO) build -race -ldflags '$(VERSION)' -o ./bin/${SERVICE_NAME_WATCHER_APP} ./cmd/app/watcher...
-	@ $(GO) build -race -ldflags '$(VERSION)' -o ./bin/${SERVICE_NAME_INIT} ./cmd/commands/init...
-	@ $(GO) build -race -ldflags '$(VERSION)' -o ./bin/${SERVICE_NAME_CREATE_WALLET} ./cmd/commands/createwallet...
-	@ $(GO) build -race -ldflags '$(VERSION)' -o ./bin/${SERVICE_NAME_DUMP_WALLET} ./cmd/commands/dumpwallet...
+	@ $(GO) build -race -ldflags '$(VERSION)' -o ./bin/${SERVICE_NAME_APP} ./cmd/app...
 
 .PHONY: mod
 mod: ## Get dependency packages

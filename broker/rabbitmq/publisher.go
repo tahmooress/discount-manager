@@ -31,14 +31,14 @@ func (s *session) handlePublisherConnection() {
 
 		s.logger.Infoln("Attempting to connect")
 
-		conn, err := s.connect(s.cfg.Addr)
+		conn, err := s.connect(s.cfg.addr)
 		if err != nil {
 			s.logger.Warningln("Failed to connect. Retrying...")
 
 			select {
 			case <-s.done:
 				return
-			case <-time.After(s.cfg.ReconnectInterval):
+			case <-time.After(s.cfg.reconnectInterval):
 			}
 
 			continue
@@ -65,7 +65,7 @@ func (s *session) handlePublisherChannel(conn *amqp.Connection) bool {
 			select {
 			case <-s.done:
 				return true
-			case <-time.After(s.cfg.ReInitInterval):
+			case <-time.After(s.cfg.reInitInterval):
 			}
 
 			continue
@@ -75,7 +75,7 @@ func (s *session) handlePublisherChannel(conn *amqp.Connection) bool {
 			Er:     nil,
 			Status: true,
 			Message: fmt.Sprintf("RabbitMQ Consumer is up on: %s for queue: %s, routingKey: %s"+
-				"exchangeType: %s, exchangeName: %s", maskConnection(s.cfg.Addr), s.cfg.Queue,
+				"exchangeType: %s, exchangeName: %s", maskConnection(s.cfg.addr), s.cfg.Queue,
 				s.cfg.RouteKey, s.cfg.ExchangeType, s.cfg.ExchangeName),
 		})
 
@@ -85,7 +85,7 @@ func (s *session) handlePublisherChannel(conn *amqp.Connection) bool {
 				Er:     nil,
 				Status: false,
 				Message: fmt.Sprintf("context cancel Called for connection: %s"+
-					"should restart the app", maskConnection(s.cfg.Addr)),
+					"should restart the app", maskConnection(s.cfg.addr)),
 			})
 
 			return true
@@ -96,7 +96,7 @@ func (s *session) handlePublisherChannel(conn *amqp.Connection) bool {
 				Er:     err,
 				Status: false,
 				Message: fmt.Sprintf("connect with address %s closed, Reconnection started...",
-					maskConnection(s.cfg.Addr)),
+					maskConnection(s.cfg.addr)),
 			})
 
 			return false
@@ -121,7 +121,7 @@ func (s *session) setPublisherChannelAndQueue(conn *amqp.Connection) error {
 			Er:     err,
 			Status: false,
 			Message: fmt.Sprintf("cant open channel on connection for %s",
-				maskConnection(s.cfg.Addr)),
+				maskConnection(s.cfg.addr)),
 		})
 
 		return fmt.Errorf("rabbit >> setupChannel() >> %w", err)
@@ -134,7 +134,7 @@ func (s *session) setPublisherChannelAndQueue(conn *amqp.Connection) error {
 			Er:     err,
 			Status: false,
 			Message: fmt.Sprintf("cant declare exchange on connection for %s, exchangeName: %s, exchangeType: %s",
-				maskConnection(s.cfg.Addr), s.cfg.ExchangeName, s.cfg.ExchangeType),
+				maskConnection(s.cfg.addr), s.cfg.ExchangeName, s.cfg.ExchangeType),
 		})
 
 		return fmt.Errorf("rabbit >> setupChannelAndQueue() >> %w", err)
@@ -143,9 +143,10 @@ func (s *session) setPublisherChannelAndQueue(conn *amqp.Connection) error {
 	_, err = ch.QueueDeclare(s.cfg.Queue, true, false, false, false, nil)
 	if err != nil {
 		s.setLastHealthStatus(HealthState{
-			Er:      err,
-			Status:  false,
-			Message: fmt.Sprintf("cant declare queue for connection: %s, queueName: %s", maskConnection(s.cfg.Addr), s.cfg.Queue),
+			Er:     err,
+			Status: false,
+			Message: fmt.Sprintf("cant declare queue for connection: %s, queueName: %s",
+				maskConnection(s.cfg.addr), s.cfg.Queue),
 		})
 
 		return fmt.Errorf("rabbit >> setupChannelAndQueue() >> %w", err)

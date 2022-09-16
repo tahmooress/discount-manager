@@ -30,7 +30,7 @@ func (s *session) closeConsumer() error {
 		return fmt.Errorf("rabbit >> close() >> %w", errAlreadyClosed)
 	}
 
-	err := s.channel.Cancel(s.cfg.ConsumerTag, false)
+	err := s.channel.Cancel(s.cfg.consumerTag, false)
 	if err != nil {
 		return fmt.Errorf("rabbit >> close() >> %w", err)
 	}

@@ -13,14 +13,14 @@ func (s *session) handleConsumerConnection(handler Handler) {
 
 		s.logger.Infoln("Attempting to connect")
 
-		conn, err := s.connect(s.cfg.Addr)
+		conn, err := s.connect(s.cfg.addr)
 		if err != nil {
 			s.logger.Warningln("Failed to connect. Retrying...")
 
 			select {
 			case <-s.done:
 				return
-			case <-time.After(s.cfg.ReconnectInterval):
+			case <-time.After(s.cfg.reconnectInterval):
 			}
 
 			continue
@@ -45,7 +45,7 @@ func (s *session) handleConsumerChannel(conn *amqp.Connection, handler Handler) 
 			select {
 			case <-s.done:
 				return true
-			case <-time.After(s.cfg.ReInitInterval):
+			case <-time.After(s.cfg.reInitInterval):
 			}
 
 			continue
@@ -55,7 +55,7 @@ func (s *session) handleConsumerChannel(conn *amqp.Connection, handler Handler) 
 			Er:     nil,
 			Status: true,
 			Message: fmt.Sprintf("RabbitMQ Consumer is up on: %s for queue: %s, routingKey: %s"+
-				"exchangeType: %s, exchangeName: %s", maskConnection(s.cfg.Addr), s.cfg.Queue,
+				"exchangeType: %s, exchangeName: %s", maskConnection(s.cfg.addr), s.cfg.Queue,
 				s.cfg.RouteKey, s.cfg.ExchangeType, s.cfg.ExchangeName),
 		})
 
@@ -65,7 +65,7 @@ func (s *session) handleConsumerChannel(conn *amqp.Connection, handler Handler) 
 				Er:     nil,
 				Status: false,
 				Message: fmt.Sprintf("context cancel Called for connection: %s"+
-					"should restart the app", maskConnection(s.cfg.Addr)),
+					"should restart the app", maskConnection(s.cfg.addr)),
 			})
 
 			return true
@@ -76,7 +76,7 @@ func (s *session) handleConsumerChannel(conn *amqp.Connection, handler Handler) 
 				Er:     err,
 				Status: false,
 				Message: fmt.Sprintf("connect with address %s closed, Reconnection started...",
-					maskConnection(s.cfg.Addr)),
+					maskConnection(s.cfg.addr)),
 			})
 
 			return false
@@ -101,7 +101,7 @@ func (s *session) setConsumerChannelAndQueue(conn *amqp.Connection, handler Hand
 			Er:     err,
 			Status: false,
 			Message: fmt.Sprintf("cant open channel on connection for %s",
-				maskConnection(s.cfg.Addr)),
+				maskConnection(s.cfg.addr)),
 		})
 
 		return fmt.Errorf("rabbit >> setupChannel() >> %w", err)
@@ -114,7 +114,7 @@ func (s *session) setConsumerChannelAndQueue(conn *amqp.Connection, handler Hand
 			Er:     err,
 			Status: false,
 			Message: fmt.Sprintf("cant declare exchange on connection for %s, exchangeName: %s, exchangeType: %s",
-				maskConnection(s.cfg.Addr), s.cfg.ExchangeName, s.cfg.ExchangeType),
+				maskConnection(s.cfg.addr), s.cfg.ExchangeName, s.cfg.ExchangeType),
 		})
 
 		return fmt.Errorf("rabbit >> setupChannelAndQueue() >> %w", err)
@@ -123,22 +123,23 @@ func (s *session) setConsumerChannelAndQueue(conn *amqp.Connection, handler Hand
 	_, err = ch.QueueDeclare(s.cfg.Queue, true, false, false, false, nil)
 	if err != nil {
 		s.setLastHealthStatus(HealthState{
-			Er:      err,
-			Status:  false,
-			Message: fmt.Sprintf("cant declare queue for connection: %s, queueName: %s", maskConnection(s.cfg.Addr), s.cfg.Queue),
+			Er:     err,
+			Status: false,
+			Message: fmt.Sprintf("cant declare queue for connection: %s, queueName: %s",
+				maskConnection(s.cfg.addr), s.cfg.Queue),
 		})
 
 		return fmt.Errorf("rabbit >> setupChannelAndQueue() >> %w", err)
 	}
 
-	err = ch.Qos(int(s.cfg.PrefetchCount), int(s.cfg.PrefetchSize), false)
+	err = ch.Qos(int(s.cfg.prefetchCount), int(s.cfg.prefetchSize), false)
 	if err != nil {
 		s.setLastHealthStatus(HealthState{
 			Er:     err,
 			Status: false,
 			Message: fmt.Sprintf("cant setup prefetchSize and prefetchCount for connection: %s,"+
 				"prefetchSize: %d, prefetchCount: %d",
-				maskConnection(s.cfg.Addr), s.cfg.PrefetchSize, s.cfg.PrefetchCount),
+				maskConnection(s.cfg.addr), s.cfg.prefetchSize, s.cfg.prefetchCount),
 		})
 
 		return fmt.Errorf("rabbit >> setupChannelAndQueue() >> %w", err)
@@ -156,13 +157,13 @@ func (s *session) setConsumerChannelAndQueue(conn *amqp.Connection, handler Hand
 		return fmt.Errorf("rabbit >> setupChannelAndQueue() >> %w", err)
 	}
 
-	consumer, err := ch.Consume(s.cfg.Queue, s.cfg.ConsumerTag, false, false, false, false, nil)
+	consumer, err := ch.Consume(s.cfg.Queue, s.cfg.consumerTag, false, false, false, false, nil)
 	if err != nil {
 		s.setLastHealthStatus(HealthState{
 			Er:     err,
 			Status: false,
 			Message: fmt.Sprintf("fail to start consuming for queueName: %s, with consumerTag: %s",
-				s.cfg.Queue, s.cfg.ConsumerTag),
+				s.cfg.Queue, s.cfg.consumerTag),
 		})
 
 		return fmt.Errorf("rabbit >> setupChannelAndQueue() >> %w", err)
