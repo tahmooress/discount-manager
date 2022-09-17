@@ -42,7 +42,7 @@ func FullNodeRunner() (closer io.Closer, errChan <-chan error, err error) {
 
 	c.Add(srv)
 
-	server, errChan, err := api.NewHTTPServer(cfg, nil, log)
+	server, errChan, err := api.NewHTTPServer(cfg, srv, log)
 	if err != nil {
 		return nil, nil, err
 	}

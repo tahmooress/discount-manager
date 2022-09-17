@@ -19,6 +19,8 @@ func (h *Handler) EnqueeRedeemer() http.HandlerFunc {
 			h.logger.Errorf("handler: Redeem() >> %w", err)
 			w.WriteHeader(http.StatusBadRequest)
 			w.Write([]byte("bad request"))
+
+			return
 		}
 
 		err = request.Validate()
@@ -31,7 +33,7 @@ func (h *Handler) EnqueeRedeemer() http.HandlerFunc {
 		err = h.service.EnqueeRedeemer(
 			r.Context(),
 			&entities.Redeemer{
-				User: request.Mobile.String(),
+				Mobile: request.Mobile.String(),
 				Voucher: &entities.Voucher{
 					Code: request.Code.String(),
 					Campaign: &entities.Campaign{
@@ -42,6 +44,8 @@ func (h *Handler) EnqueeRedeemer() http.HandlerFunc {
 		)
 		if err != nil {
 			responseErrorHandler(err, w)
+
+			return
 		}
 
 		w.WriteHeader(http.StatusAccepted)

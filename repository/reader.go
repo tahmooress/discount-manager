@@ -49,7 +49,7 @@ func (r *repo) GetCampaignsByStatus(status bool) ([]entities.Campaign, error) {
 func (r *repo) GetRedeemersByCampaig(campaignName string) ([]entities.Redeemer, error) {
 	query := `SELECT c.id, c.name, c.status, c.created_at
 		v.id, v.code, v.value, v.start_date, v.expire_date, v.created_at
-		r.id, r.user, r.created_at FROM campaigns c
+		r.id, r.mobile, r.created_at FROM campaigns c
 		INNERR JOIN vouchers v ON c.id = v.campaign_id
 		INNER JOIN redeemed r ON v.id = r.voucher_id
 		WHERE c.name = $1`
@@ -78,7 +78,7 @@ func (r *repo) GetRedeemersByCampaig(campaignName string) ([]entities.Redeemer, 
 			&r.Voucher.Campaign.ID, &r.Voucher.Campaign.Name, &r.Voucher.Campaign.Status,
 			&r.Voucher.ID, &r.Voucher.Code, &r.Voucher.Value,
 			&r.Voucher.Campaign.StartDate, &expDate, &r.Voucher.CreatedAt,
-			&r.ID, &r.User, &r.CreatedAt,
+			&r.ID, &r.Mobile, &r.CreatedAt,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("repositry: GetRedeemersByCampaig() >> %w", err)
@@ -136,18 +136,18 @@ func (r *repo) GetUnusedVouchers(camapaignID string) ([]entities.Voucher, error)
 	return vouchers, nil
 }
 
-func (r *repo) GetUserVoucher(campaignID, user string) (*entities.Redeemer, error) {
-	query := `SELECT r.id, r.user, v.id, v.code, v.value
+func (r *repo) GetUserVoucher(campaignID, mobile string) (*entities.Redeemer, error) {
+	query := `SELECT r.id, r.mobile, v.id, v.code, v.value,
 		c.id, c.name FROM redeemed r LEFT JOIN vouchers v ON r.voucher_id = v.id
-		LEFT JOIN campaigns c ON v.campaign_id = c.id WHERE r.user = $1 AND v.campaign_id = $2`
+		LEFT JOIN campaigns c ON v.campaign_id = c.id WHERE r.mobile = $1 AND v.campaign_id = $2`
 
 	var redeemer entities.Redeemer
 
 	redeemer.Voucher = new(entities.Voucher)
 	redeemer.Voucher.Campaign = new(entities.Campaign)
 
-	err := r.db.QueryRow(query, user, campaignID).Scan(
-		&redeemer.ID, &redeemer.User, &redeemer.Voucher.ID,
+	err := r.db.QueryRow(query, mobile, campaignID).Scan(
+		&redeemer.ID, &redeemer.Mobile, &redeemer.Voucher.ID,
 		&redeemer.Voucher.Code, &redeemer.Voucher.Value,
 		&redeemer.Voucher.Campaign.ID, &redeemer.Voucher.Campaign.Name,
 	)

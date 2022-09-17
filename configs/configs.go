@@ -28,6 +28,8 @@ type AppConfigs struct {
 	// rabbitMQ config
 	RabbitMQRedeemerHost         string
 	RabbitMQRedeemerPort         string
+	RabbitMQRedeemerUser         string
+	RabbitMQRedeemerPass         string
 	RabbitMQRedeemerExchange     string
 	RabbitMQRedeemerExchangeType string
 	RabbitMQRedeemerQueue        string
@@ -35,6 +37,8 @@ type AppConfigs struct {
 
 	RabbitMQWalletHost         string
 	RabbitMQWalletPort         string
+	RabbitMQWalletUser         string
+	RabbitMQWalletPass         string
 	RabbitMQWalletExchange     string
 	RabbitMQWalletExchangeType string
 	RabbitMQWalletRoutingKey   string
@@ -64,6 +68,8 @@ func Load() *AppConfigs {
 
 		RabbitMQRedeemerHost:         os.Getenv("RABBITMQ_REDEEMER_HOST"),
 		RabbitMQRedeemerPort:         os.Getenv("RABBITMQ_REDEEMER_PORT"),
+		RabbitMQRedeemerUser:         os.Getenv("RABBITMQ_REDEEMER_USER"),
+		RabbitMQRedeemerPass:         os.Getenv("RABBITMQ_REDEEMER_PASSWORD"),
 		RabbitMQRedeemerExchange:     os.Getenv("RABBITMQ_REDEEMER_EXCHANGE"),
 		RabbitMQRedeemerExchangeType: os.Getenv("RABBITMQ_REDEEMER_EXCHANGE_TYPE"),
 		RabbitMQRedeemerQueue:        os.Getenv("RABBITMQ_REDEEMER_QUEUE"),
@@ -71,6 +77,8 @@ func Load() *AppConfigs {
 
 		RabbitMQWalletHost:         os.Getenv("RABBITMQ_WALLET_HOST"),
 		RabbitMQWalletPort:         os.Getenv("RABBITMQ_REDEEMER_PORT"),
+		RabbitMQWalletUser:         os.Getenv("RABBITMQ_REDEEMER_USER"),
+		RabbitMQWalletPass:         os.Getenv("RABBITMQ_REDEEMER_PASSWORD"),
 		RabbitMQWalletExchange:     os.Getenv("RABBITMQ_WALLET_EXCHANGE"),
 		RabbitMQWalletExchangeType: os.Getenv("RABBITMQ_WALLET_EXCHANGE_TYPE"),
 		RabbitMQWalletQuee:         os.Getenv("RABBITMQ_WALLET_QUEUE"),

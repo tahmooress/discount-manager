@@ -8,7 +8,10 @@ import (
 	"github.com/tahmooress/discount-manager/entities"
 )
 
-var ErrNotFound = errors.New("error request data not found")
+var (
+	ErrNotFound  = errors.New("error request data not found")
+	ErrDuplicate = errors.New("dupblicate entry")
+)
 
 type transaction struct {
 	tx *sql.Tx
@@ -49,8 +52,8 @@ func (t *transaction) AddVouchers(vouchers []entities.Voucher) error {
 }
 
 func (t *transaction) RedeemVoucher(r *entities.Redeemer) error {
-	slcQuery := `SELECT voucher_id from vouchers 
-		redeemed = false AND  campaigns.id = $1
+	slcQuery := `SELECT id FROM vouchers WHERE
+		redeemed = false AND  campaign_id  = $1
 		ORDER BY id ASC LIMIT 1
 		FOR UPDATE SKIP LOCKED`
 
@@ -64,7 +67,7 @@ func (t *transaction) RedeemVoucher(r *entities.Redeemer) error {
 	var voucherID string
 
 	for rows.Next() {
-		err = rows.Scan(voucherID)
+		err = rows.Scan(&voucherID)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				return ErrNotFound
@@ -79,18 +82,22 @@ func (t *transaction) RedeemVoucher(r *entities.Redeemer) error {
 		return fmt.Errorf("repository: RedeemVoucher() >> %w", err)
 	}
 
-	updQuery := `UPDATE vouchers SET redeemed = true
-		WHERE vouchers.id = $1`
+	insQuery := `INSERT INTO redeemed(id, voucher_id, mobile) 
+		VALUES($1,$2,$3) ON CONFLICT DO NOTHING`
 
-	_, err = t.tx.Exec(updQuery, voucherID)
+	result, err := t.tx.Exec(insQuery, r.ID, voucherID, r.Mobile)
 	if err != nil {
 		return fmt.Errorf("repository: RedeemVoucher() >> %w", err)
 	}
 
-	insQuery := `INSERT INTO redeemed(id, voucher_id, user) 
-		VALUES($1,$2,$3)`
+	if n, err := result.RowsAffected(); n == 0 || err != nil {
+		return ErrDuplicate
+	}
 
-	_, err = t.tx.Exec(insQuery, r.ID, voucherID, r.User)
+	updQuery := `UPDATE vouchers SET redeemed = true
+		WHERE vouchers.id = $1`
+
+	_, err = t.tx.Exec(updQuery, voucherID)
 	if err != nil {
 		return fmt.Errorf("repository: RedeemVoucher() >> %w", err)
 	}

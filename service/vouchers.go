@@ -69,7 +69,7 @@ func (s *service) ApplyVoucher(redeemer *entities.Redeemer) error {
 			return err
 		}
 
-		err = s.cachedb.Set(context.TODO(), cacheKey(cmp.Name, redeemer.User), redeemer.User)
+		err = s.cachedb.Set(context.TODO(), cacheKey(cmp.Name, redeemer.Mobile), redeemer.Mobile)
 		if err != nil {
 			return err
 		}
@@ -84,15 +84,19 @@ func (s *service) ApplyVoucher(redeemer *entities.Redeemer) error {
 		s.checkForDeactivingCampaign(cmp.Name)
 
 		err = nil
+	case errors.Is(err, repository.ErrDuplicate):
+		err = nil
 	}
 
 	return err
 }
 
 func (s *service) notifyWallet(r *entities.Redeemer) {
-	redeemer, err := s.db.GetUserVoucher(r.Voucher.Campaign.ID, r.User)
+	redeemer, err := s.db.GetUserVoucher(r.Voucher.Campaign.ID, r.Mobile)
 	if err != nil {
 		s.logger.Errorf("service: notifyWallet() >> %w", err)
+
+		return
 	}
 
 	b, err := redeemer.Wire()

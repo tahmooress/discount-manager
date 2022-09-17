@@ -1,0 +1,1 @@
+CREATE INDEX CONCURRENTLY IF NOT EXISTS redeemed_mobile_index ON redeemed (mobile);

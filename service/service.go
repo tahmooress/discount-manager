@@ -48,6 +48,8 @@ func New(cfg *configs.AppConfigs, logger logger.Logger) (u Usecases, err error) 
 	notifier, err := rabbitmq.NewPublisher(rabbitmq.Config{
 		Host:         cfg.RabbitMQWalletHost,
 		Port:         cfg.RabbitMQWalletPort,
+		User:         cfg.RabbitMQWalletUser,
+		Pass:         cfg.RabbitMQWalletPass,
 		ExchangeName: cfg.RabbitMQWalletExchange,
 		ExchangeType: cfg.RabbitMQWalletExchangeType,
 		RouteKey:     cfg.RabbitMQWalletRoutingKey,
@@ -62,6 +64,8 @@ func New(cfg *configs.AppConfigs, logger logger.Logger) (u Usecases, err error) 
 	queue, err := rabbitmq.NewPublisher(rabbitmq.Config{
 		Host:         cfg.RabbitMQRedeemerHost,
 		Port:         cfg.RabbitMQRedeemerPort,
+		User:         cfg.RabbitMQWalletUser,
+		Pass:         cfg.RabbitMQWalletPass,
 		ExchangeName: cfg.RabbitMQRedeemerExchange,
 		ExchangeType: cfg.RabbitMQRedeemerExchangeType,
 		RouteKey:     cfg.RabbitMQRedeemerRouteKey,
@@ -125,6 +129,8 @@ func (s *service) initConsumer(cfg *configs.AppConfigs) error {
 		rabbitmq.Config{
 			Host:         cfg.RabbitMQRedeemerHost,
 			Port:         cfg.RabbitMQRedeemerPort,
+			User:         cfg.RabbitMQRedeemerUser,
+			Pass:         cfg.RabbitMQRedeemerPass,
 			ExchangeName: cfg.RabbitMQRedeemerExchange,
 			ExchangeType: cfg.RabbitMQRedeemerExchangeType,
 			RouteKey:     cfg.RabbitMQRedeemerRouteKey,
@@ -144,7 +150,7 @@ func (s *service) initConsumer(cfg *configs.AppConfigs) error {
 }
 
 func (s *service) intiCampagins() error {
-	campaigns, err := s.db.GetCampaignsByStatus(false)
+	campaigns, err := s.db.GetCampaignsByStatus(true)
 	if err != nil {
 		return err
 	}

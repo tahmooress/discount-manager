@@ -29,13 +29,13 @@ type Voucher struct {
 
 type Redeemer struct {
 	ID        string
-	User      string
+	Mobile    string
 	Voucher   *Voucher
 	CreatedAt time.Time
 }
 
 func (r Redeemer) Validate() error {
-	if r.User == "" {
+	if r.Mobile == "" {
 		return errInvalidRedeemer
 	}
 
@@ -51,14 +51,14 @@ func (r Redeemer) Validate() error {
 }
 
 type wireRedeemer struct {
-	User     string `json:"user"`
+	User     string `json:"mobile"`
 	Campaign string `json:"campaign"`
 	Value    int64  `json:"value"`
 }
 
 func (r *Redeemer) Wire() ([]byte, error) {
 	temp := wireRedeemer{
-		User:     r.User,
+		User:     r.Mobile,
 		Campaign: r.Voucher.Campaign.Name,
 		Value:    r.Voucher.Value,
 	}

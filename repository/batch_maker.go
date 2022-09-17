@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	batchSize = 400
+	batchSize = 500
 )
 
 func computeBatchSteps(items int) int { return int(math.Ceil(float64(items) / batchSize)) }
